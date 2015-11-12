@@ -37,6 +37,9 @@ var last_floor_velocity = Vector3()
 
 var shoot_blend = 0
 
+var ConnectionClass = preload("connection.gd")
+var cvc
+
 func adjust_facing(p_facing, p_target,p_step, p_adjust_rate,current_gn):
 
 	var n = p_target # normal
@@ -231,12 +234,68 @@ func _integrate_forces( state ):
 #	state.set_angular_velocity(Vector3())	
 	
 	
+func logged_in(cmd,reply):
+	print("logged_in: got cmd=", cmd, " reply=", reply)
+	var player = reply["player"]
+	print ("player = ", player)
+	print ("player.name = ", player.get_name()) 
+	print ("player.uid = ", player.get_uid()) 
+	print ("player.base_uid = ", player.get_base_uid()) 
+	print ("player.outposts = ", player.get_outposts()) 
+	cvc.send_command({ "cmd" : "load_main_base", "uid" : player.get_base_uid()}, self, "loaded_base")
+	
+func loaded_base(cmd,reply):
+	print("loaded_main_base: got cmd=", cmd, " reply=", reply)
+	var base = reply["base"]
+	print(" base owner: ", base.get_owner())
+	print(" base moon: ", base.get_moon())
+	print(" base buildings: ", base.get_buildings())
+	print(" base units: ", base.get_units())
+	print(" base heroes: ", base.get_heroes())
+	print(" base max units: ", base.get_max_units())
+	var buildings = base.get_buildings()
+	for k in buildings:
+		var b = buildings[k]
+		print(" bldg ", k, " is ", b)
+		print("  uid=", b.get_uid())
+		print("  x=", b.get_x())
+		print("  y=", b.get_y())
+		print("  hp=", b.get_hp())
+		b.log_deb()
 
 
 func _ready():
-
-
 	# Initalization here
+	var args = { 0:"a_string", "init_arg1":1, "init_arg2":3.1415926, "bflag":true }
+	print("create new verse connection...")
+
+	#cvc = ClashVerseConnection.new()
+	cvc = ConnectionClass.new()
+	add_child(cvc)
+	print("initialize with args: ", args)
+	var rv = cvc.initialize(args)
+	print("return value is: ", rv)
+
+	var xxx = cvc.get_global_object("Barracks_None")
+	print("Barracks_None=", xxx)
+	var yyy = cvc.get_global_object("Barracks_1")
+	print("Barracks_1=", yyy)
+	print("Barracks_1.max_space=", yyy.get_max_space())
+	print("Barracks_1.can_produce=", yyy.get_can_produce())
+	print("Barracks_1.max_hp=", yyy.get_max_hp())
+	print("Barracks_1.sx=", yyy.get_sx())
+	print("Barracks_1.sy=", yyy.get_sy())
+	print("Barracks_1.name=", yyy.get_name())
+	print("Barracks_1.level=", yyy.get_level())
+	print("Barracks_1.next_level=", yyy.get_next_level())
+	print("Barracks_1.prices=", yyy.get_prices()[0][0])
+	print("Barracks_1.prices[0][0].amount=", yyy.get_prices()[0][0].get_amount())
+	print("Barracks_1.prices[0][0].money_type=", yyy.get_prices()[0][0].get_money_type())
+
+	var args = { "cmd" : "login", "vendor_uid" : "777" }
+	var rv = cvc.send_command(args, self, "logged_in")
+	print("send_command result = ", rv)
+	
 	get_node("AnimationTreePlayer").set_active(true)
 	pass
 
